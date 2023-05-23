@@ -11,8 +11,13 @@ export type Project = {
 };
 
 export type ProjectFiles = {
-  files: File[];
+  files?: File[];
   name: string;
+};
+
+export type TeamFiles = {
+  name: string;
+  files: ProjectFiles[];
 };
 
 export type TeamProjects = {

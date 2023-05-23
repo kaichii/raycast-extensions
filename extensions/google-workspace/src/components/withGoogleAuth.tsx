@@ -1,5 +1,5 @@
-import { Detail } from "@raycast/api";
-import { useEffect, useState } from "react";
+import { Detail, environment, MenuBarExtra } from "@raycast/api";
+import { useMemo, useState } from "react";
 import { authorize } from "../api/oauth";
 
 let token: string | null = null;
@@ -7,7 +7,8 @@ let token: string | null = null;
 export function withGoogleAuth(component: JSX.Element) {
   const [x, forceRerender] = useState(0);
 
-  useEffect(() => {
+  // we use a `useMemo` instead of `useEffect` to avoid a render
+  useMemo(() => {
     (async function () {
       token = await authorize();
 
@@ -16,8 +17,15 @@ export function withGoogleAuth(component: JSX.Element) {
   }, []);
 
   if (!token) {
-    // Using the <List /> component makes the placeholder buggy
-    return <Detail isLoading />;
+    if (environment.commandMode === "view") {
+      // Using the <List /> component makes the placeholder buggy
+      return <Detail isLoading />;
+    } else if (environment.commandMode === "menu-bar") {
+      return <MenuBarExtra isLoading />;
+    } else {
+      console.error("`withGoogleAuth` is only supported in `view` and `menu-bar` mode");
+      return null;
+    }
   }
 
   return component;

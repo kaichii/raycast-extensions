@@ -1,41 +1,15 @@
-import { getPreferenceValues } from "@raycast/api";
 import { XcodeProject } from "../models/xcode-project/xcode-project.model";
 import { XcodeProjectType } from "../models/xcode-project/xcode-project-type.model";
 import { execAsync } from "../shared/exec-async";
 import { runAppleScript } from "../shared/run-apple-script";
 import untildify from "untildify";
 import * as Path from "path";
+import { getPreferences } from "../shared/get-preferences";
 
 /**
  * XcodeProjectService
  */
 export class XcodeProjectService {
-  /**
-   * Retrieve the excluded Xcode Project paths
-   * which are configured via the Raycast Preferences
-   */
-  private static excludedXcodeProjectPaths(): string[] {
-    // Retrieve the preference values
-    const preferences = getPreferenceValues();
-    // Retrieve the excluded Xcode Project paths string from preference values
-    const excludedXcodeProjectPathsString = preferences.excludedXcodeProjectPaths as string;
-    // Check if excluded Xcode Project path string is falsy
-    if (!excludedXcodeProjectPathsString) {
-      // Return an empty array
-      return [];
-    }
-    // Return excluded Xcode Project paths
-    return (
-      excludedXcodeProjectPathsString
-        // Split by comma
-        .split(",")
-        // Trim each path
-        .map((path) => path.trim())
-        // Untildify each path
-        .map((path) => untildify(path))
-    );
-  }
-
   /**
    * Retrieve XcodeProjects
    */
@@ -70,7 +44,7 @@ export class XcodeProjectService {
       // Decode each Xcode Project Path
       .map((xcodeProjectPath) => XcodeProjectService.decodeXcodeProject(xcodeProjectPath))
       // Filter out null values
-      .filter((xcodeProject) => !!xcodeProject) as XcodeProject[];
+      .filter(Boolean) as XcodeProject[];
     // Return XcodeProjects
     return xcodeProjects;
   }
@@ -122,7 +96,31 @@ export class XcodeProjectService {
         // Decode each Xcode Project Path
         .map((xcodeProjectPath) => XcodeProjectService.decodeXcodeProject(xcodeProjectPath))
         // Filter out null values
-        .filter((xcodeProject) => !!xcodeProject) as XcodeProject[]
+        .filter(Boolean) as XcodeProject[]
+    );
+  }
+
+  /**
+   * Retrieve the excluded Xcode Project paths
+   * which are configured via the Raycast Preferences
+   */
+  private static excludedXcodeProjectPaths(): string[] {
+    // Retrieve the excluded Xcode Project paths string from preference values
+    const excludedXcodeProjectPathsString = getPreferences().excludedXcodeProjectPaths;
+    // Check if excluded Xcode Project path string is falsy
+    if (!excludedXcodeProjectPathsString) {
+      // Return an empty array
+      return [];
+    }
+    // Return excluded Xcode Project paths
+    return (
+      excludedXcodeProjectPathsString
+        // Split by comma
+        .split(",")
+        // Trim each path
+        .map((path) => path.trim())
+        // Untildify each path
+        .map((path) => untildify(path))
     );
   }
 
@@ -171,6 +169,7 @@ export class XcodeProjectService {
     return {
       name: name,
       type: fileExtension,
+      directoryPath: Path.dirname(xcodeProjectPath),
       filePath: xcodeProjectPath,
       keywords: keywords.reverse(),
     };

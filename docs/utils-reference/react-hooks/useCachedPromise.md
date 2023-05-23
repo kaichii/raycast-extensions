@@ -22,6 +22,7 @@ function useCachedPromise<T, U>(
     execute?: boolean;
     onError?: (error: Error) => void;
     onData?: (data: Result<T>) => void;
+    onWillExecute?: (args: Parameters<T>) -> void;
   }
 ): AsyncState<Result<T>> & {
   revalidate: () => void;
@@ -105,7 +106,7 @@ import { useCachedPromise } from "@raycast/utils";
 
 const Demo = () => {
   const [searchText, setSearchText] = useState("");
-  const { isLoading, data, mutate } = useCachedPromise(
+  const { isLoading, data } = useCachedPromise(
     async (url: string) => {
       const response = await fetch(url);
       const result = await response.text();
@@ -199,7 +200,7 @@ An object corresponding to the execution state of the function.
 ```ts
 // Initial State
 {
-  isLoading: true,
+  isLoading: true, // or `false` if `options.execute` is `false`
   data: undefined,
   error: undefined
 }
