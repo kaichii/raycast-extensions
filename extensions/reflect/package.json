@@ -7,13 +7,25 @@
   "author": "ryon",
   "contributors": [
     "joshknowles",
-    "tylerwince"
+    "tylerwince",
+    "ocavue",
+    "theomjones"
   ],
   "categories": [
     "Applications",
     "Productivity"
   ],
   "license": "MIT",
+  "preferences": [
+    {
+      "name": "parentLists",
+      "type": "textfield",
+      "description": "Comma separated lists of parent lists to append your notes within (i.e. 🗓 Daily Log, or [[🗓 Daily Log]])",
+      "required": false,
+      "title": "Parent Lists (comma separated)",
+      "placeholder": "🗓 Daily Log, [[✅ Tasks]]"
+    }
+  ],
   "commands": [
     {
       "name": "append",
@@ -48,8 +60,15 @@
         {
           "name": "listName",
           "title": "Parent List (Optional)",
-          "description": "Parent list to append your notes within (i.e. 🗓 Daily Log)",
+          "description": "Parent list to append your notes within (i.e. 🗓 Daily Log, or [[✅ Tasks]])",
           "type": "textfield",
+          "required": false
+        },
+        {
+          "label": "Is Task (Optional)",
+          "name": "isTask",
+          "description": "Mark the note as a task",
+          "type": "checkbox",
           "required": false
         },
         {
@@ -57,6 +76,24 @@
           "label": "Prepend Timestamp (Optional)",
           "description": "Prepend a timestamp to your note",
           "type": "checkbox",
+          "required": false
+        },
+        {
+          "name": "timestampFormat",
+          "title": "Timestamp Format",
+          "description": "The format of prepended timestamp",
+          "type": "dropdown",
+          "data": [
+            {
+              "title": "12 hour",
+              "value": "12"
+            },
+            {
+              "title": "24 hour",
+              "value": "24"
+            }
+          ],
+          "default": "12",
           "required": false
         }
       ],
@@ -66,6 +103,12 @@
           "type": "text",
           "placeholder": "What's top of mind?",
           "required": true
+        },
+        {
+          "name": "list",
+          "type": "text",
+          "placeholder": "Parent list substring",
+          "required": false
         }
       ],
       "mode": "no-view"

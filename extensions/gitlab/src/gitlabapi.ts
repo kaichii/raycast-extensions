@@ -327,6 +327,16 @@ export class User {
   public web_url = "";
 }
 
+export class TemplateSummary {
+  public id = "";
+  public name = "";
+}
+
+export class TemplateDetail {
+  public name = "";
+  public content = "";
+}
+
 export interface Status {
   emoji: string;
   message: string;
@@ -350,7 +360,7 @@ async function toJsonOrError(response: Response): Promise<any> {
   } else if (s == 401) {
     throw Error("Unauthorized");
   } else if (s == 403) {
-    const json = await response.json();
+    const json = (await response.json()) as any;
     let msg = "Forbidden";
     if (json.error && json.error == "insufficient_scope") {
       msg = "Insufficient API token scope";
@@ -360,7 +370,7 @@ async function toJsonOrError(response: Response): Promise<any> {
   } else if (s == 404) {
     throw Error("Not found");
   } else if (s >= 400 && s < 500) {
-    const json = await response.json();
+    const json = (await response.json()) as any;
     logAPI(json);
     const msg = json.message;
     throw Error(msg);
@@ -461,7 +471,7 @@ export class GitLab {
       } else if (s == 401) {
         throw Error("Unauthorized");
       } else if (s == 403) {
-        const json = await response.json();
+        const json = (await response.json()) as any;
         let msg = "Forbidden";
         if (json.error && json.error == "insufficient_scope") {
           msg = "Insufficient API token scope";
@@ -471,7 +481,7 @@ export class GitLab {
       } else if (s == 404) {
         throw Error("Not found");
       } else if (s >= 400 && s < 500) {
-        const json = await response.json();
+        const json = (await response.json()) as any;
         logAPI(json);
         let msg = `http status ${s}`;
         if (json.message) {
@@ -550,7 +560,7 @@ export class GitLab {
   }
 
   async getProjectMember(projectId: number): Promise<User[]> {
-    const userItems: User[] = await this.fetch(`projects/${projectId}/users`).then((users) => {
+    const userItems: User[] = await this.fetch(`projects/${projectId}/users`, {}, true).then((users) => {
       return users.map((userdata: any) => ({
         id: userdata.id,
         name: userdata.name,
@@ -587,6 +597,30 @@ export class GitLab {
     return items;
   }
 
+  async getProjectMergeRequestTemplates(projectId: number): Promise<TemplateSummary[]> {
+    const items: TemplateSummary[] = await this.fetch(`projects/${projectId}/templates/merge_requests`).then(
+      (templates) => {
+        return templates.map((template: any) => ({
+          id: template.key,
+          name: template.name,
+        }));
+      }
+    );
+    return items;
+  }
+
+  async getProjectMergeRequestTemplate(projectId: number, templateName: string): Promise<TemplateDetail> {
+    const item: TemplateDetail = await this.fetch(
+      `projects/${projectId}/templates/merge_requests/${templateName}`
+    ).then((template) => {
+      return {
+        name: template.name,
+        content: template.content,
+      };
+    });
+    return item;
+  }
+
   async getGroupMilestones(group: Group): Promise<Milestone[]> {
     const items: Milestone[] = await this.fetch(`groups/${group.id}/milestones`).then((labels) => {
       return labels.map((data: any) => ({
@@ -606,12 +640,13 @@ export class GitLab {
     });
   }
 
-  async getProjects(args = { searchText: "", searchIn: "" }): Promise<Project[]> {
+  async getProjects(args = { searchText: "", searchIn: "", membership: "true" }): Promise<Project[]> {
     const params: { [key: string]: string } = {};
     if (args.searchText) {
       params.search = args.searchText;
       params.in = args.searchIn || "title";
     }
+    params.membership = args.membership;
     const issueItems: Project[] = await this.fetch("projects", params).then((projects) => {
       return projects.map((project: any) => dataToProject(project));
     });
@@ -737,7 +772,19 @@ export class GitLab {
     return user;
   }
 
-  async getUserGroups(params: Record<string, any> = {}): Promise<any> {
+  async getGroups(args = { searchText: "", searchIn: "" }): Promise<Group[]> {
+    const params: { [key: string]: string } = {};
+    if (args.searchText) {
+      params.search = args.searchText;
+      params.in = args.searchIn || "title";
+    }
+    const groupItems: Group[] = ((await this.fetch("groups", params)) as Group[]) || [];
+    return groupItems;
+  }
+
+  async getUserGroups(
+    params: { min_access_level?: string; search?: string; top_level_only?: boolean } = {}
+  ): Promise<any> {
     if (!params.min_access_level) {
       params.min_access_level = "30";
     }
@@ -745,12 +792,22 @@ export class GitLab {
     delete params.search;
 
     const dataAll: Group[] = await receiveLargeCachedObject(hashRecord(params, "usergroups"), async () => {
-      return ((await this.fetch(`groups`, params, true)) as Group[]) || [];
+      return ((await this.fetch(`groups`, params as Record<string, any>, true)) as Group[]) || [];
     });
-    return searchData<Group>(dataAll, { search: search, keys: ["title"], limit: 50 });
+    return searchData<Group>(dataAll, { search: search || "", keys: ["title"], limit: 50 });
   }
 
-  async getUserEpics(params: Record<string, any> = {}): Promise<Epic[]> {
+  async getUserEpics(
+    params: {
+      min_access_level?: string;
+      scope?: EpicScope;
+      state?: EpicState;
+      author_id?: number;
+      groupid?: string;
+      include_ancestor_groups?: boolean;
+      include_descendant_groups?: boolean;
+    } = {}
+  ): Promise<Epic[]> {
     if (!params.min_access_level) {
       params.min_access_level = "30";
     }
@@ -763,20 +820,42 @@ export class GitLab {
       delete params.scope;
     }
 
-    params.include_ancestor_groups = false;
-    params.include_descendant_groups = false;
+    const groupid = params.groupid;
 
-    const groups = await this.getUserGroups();
+    if (params.include_ancestor_groups === undefined) {
+      params.include_ancestor_groups = false;
+    }
+    if (params.include_descendant_groups === undefined) {
+      params.include_descendant_groups = false;
+    }
+    if (groupid && params.include_ancestor_groups) {
+      delete params.include_ancestor_groups;
+    }
+
+    if (groupid) {
+      try {
+        const data = (await this.fetch(`groups/${groupid}/epics`, params as Record<string, any>, true)) || [];
+        return data;
+      } catch (e: any) {
+        logAPI("skip during error");
+        return [];
+      }
+    }
+
+    const groups = await this.getUserGroups({ top_level_only: true });
     const epics: Epic[] = [];
     for (const g of groups) {
       try {
-        const data = (await this.fetch(`groups/${g.id}/epics`, params, true)) || [];
+        const data = (await this.fetch(`groups/${g.id}/epics`, params as Record<string, any>, true)) || [];
         for (const e of data) {
           epics.push(e);
         }
       } catch (e: any) {
         logAPI("skip during error");
       }
+    }
+    if (params.include_ancestor_groups === true && !groupid) {
+      return epics.filter((e, i, a) => a.findIndex((t) => t.id === e.id) === i) || [];
     }
     return epics;
   }

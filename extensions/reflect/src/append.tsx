@@ -1,8 +1,18 @@
 import { appendToDailyNote, getGraphs, Graph, ReflectApiError } from "./helpers/api";
+import { prependNote } from "./helpers/dates";
 import { authorize } from "./helpers/oauth";
-import { prependTimestampIfSelected } from "./helpers/dates";
 
-import { Action, ActionPanel, closeMainWindow, Form, popToRoot, showToast, Toast, LocalStorage } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  closeMainWindow,
+  Form,
+  getPreferenceValues,
+  LocalStorage,
+  popToRoot,
+  showToast,
+  Toast,
+} from "@raycast/api";
 import { FormValidation, useForm } from "@raycast/utils";
 import { useEffect, useState } from "react";
 
@@ -11,6 +21,8 @@ interface FormValues {
   prependTimestamp: boolean;
   parentList: string;
   graphId: string;
+  timestampFormat?: string;
+  isTask: boolean;
 }
 
 export default function Command() {
@@ -23,7 +35,11 @@ export default function Command() {
 
       try {
         const authorizationToken = await authorize();
-        const text = prependTimestampIfSelected(values.note, values);
+        const text = prependNote(values.note, {
+          isTask: values.isTask,
+          prependTimestamp: values.prependTimestamp,
+          timestampFormat: values.timestampFormat as "12" | "24" | undefined,
+        });
 
         await appendToDailyNote(authorizationToken, values.graphId, text, values.parentList);
         await LocalStorage.setItem("graphId", values.graphId);
@@ -62,6 +78,12 @@ export default function Command() {
     fetchData();
   }, []);
 
+  const showTimestampFormat: boolean = itemProps.prependTimestamp.value ?? false;
+
+  const { parentLists = "" } = getPreferenceValues<ExtensionPreferences>();
+
+  const parentListOptions = parentLists.split(",").map((item) => item.trim());
+
   return (
     <Form
       actions={
@@ -71,13 +93,22 @@ export default function Command() {
       }
     >
       <Form.TextArea {...itemProps.note} title="Note" />
+      <Form.Checkbox {...itemProps.isTask} label="Task" storeValue={true} />
       <Form.Checkbox {...itemProps.prependTimestamp} label="Prepend Timestamp" storeValue={true} />
-      <Form.TextField
-        {...itemProps.parentList}
-        title="Parent List (Optional)"
-        placeholder="i.e. 🗓 Daily Log"
-        storeValue={true}
-      />
+      {showTimestampFormat ? (
+        <Form.Dropdown {...itemProps.timestampFormat} storeValue={true}>
+          <Form.Dropdown.Item value="12" title="12 hour" />
+          <Form.Dropdown.Item value="24" title="24 hour" />
+        </Form.Dropdown>
+      ) : null}
+      {parentListOptions.length > 0 ? (
+        <Form.Dropdown storeValue={true} title="Parent List (Optional)" {...itemProps.parentList}>
+          <Form.Dropdown.Item value="" title="-" />
+          {parentListOptions.map((opt) => {
+            return <Form.Dropdown.Item key={opt} value={opt} title={opt.replaceAll("[", "").replaceAll("]", "")} />;
+          })}
+        </Form.Dropdown>
+      ) : null}
       <Form.Separator />
       <Form.Dropdown {...itemProps.graphId} title="Graph" value={graphId} onChange={setGraphId}>
         {graphs.map((graph) => (

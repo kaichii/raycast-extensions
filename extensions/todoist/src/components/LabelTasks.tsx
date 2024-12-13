@@ -7,8 +7,7 @@ import { QuickLinkView, ViewMode } from "../home";
 import useCachedData from "../hooks/useCachedData";
 import useViewTasks from "../hooks/useViewTasks";
 
-import CreateViewAction from "./CreateViewAction";
-import TaskListItem from "./TaskListItem";
+import CreateViewActions from "./CreateViewActions";
 import TaskListSections from "./TaskListSections";
 
 type LabelTasksProps = { name: string; quickLinkView?: QuickLinkView };
@@ -37,7 +36,11 @@ function LabelTasks({ name, quickLinkView }: LabelTasksProps) {
               shortcut={{ modifiers: ["cmd", "shift"], key: "a" }}
             />
 
-            {quickLinkView ? <CreateViewAction {...quickLinkView} /> : null}
+            {quickLinkView ? (
+              <ActionPanel.Section>
+                <CreateViewActions {...quickLinkView} />
+              </ActionPanel.Section>
+            ) : null}
           </ActionPanel>
         }
       />
@@ -45,28 +48,12 @@ function LabelTasks({ name, quickLinkView }: LabelTasksProps) {
   }
 
   return (
-    <>
-      {viewProps.groupBy?.value === "default" ? (
-        sortedTasks.map((task) => {
-          return (
-            <TaskListItem
-              key={task.id}
-              task={task}
-              mode={ViewMode.search}
-              viewProps={viewProps}
-              quickLinkView={quickLinkView}
-            />
-          );
-        })
-      ) : (
-        <TaskListSections
-          mode={ViewMode.project}
-          sections={sections}
-          viewProps={viewProps}
-          quickLinkView={quickLinkView}
-        />
-      )}
-    </>
+    <TaskListSections
+      mode={ViewMode.project}
+      sections={viewProps.groupBy?.value === "default" ? [{ name, tasks: sortedTasks }] : sections}
+      viewProps={viewProps}
+      quickLinkView={quickLinkView}
+    />
   );
 }
 

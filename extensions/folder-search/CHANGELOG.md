@@ -1,5 +1,18 @@
 # Folder Search Changelog
 
+## [New Features] - 2024-08-20
+
+- **added** Pins can now be ordered by `Move Pin Up` and `Move Pin Down` actions
+
+## [Command rename] - 2023-06-16
+- attempt #2 at fixing the fall back command with duplicated query.
+- added Throttle to search to improve experience
+
+## [Command rename] - 2023-06-13
+Fixing Three Issues / Two bugs
+- Extension only worked in English. Fixed up code to be language agnostic
+- Sometimes the fallback invocation resulted in the search query being duplicated so "Query" would appear "QueryQuery". This is not consistent, but I added some code to deal with this issue.
+
 ## [Command rename] - 2023-05-17
 
 - Rename the command to conform to the standards

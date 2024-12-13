@@ -1,22 +1,27 @@
 import { Action, Color, Icon, showToast, Toast } from "@raycast/api";
 import { VAULT_LOCK_MESSAGES } from "~/constants/general";
 import { useBitwarden } from "~/context/bitwarden";
-import { useVault } from "~/context/vault";
+import { useVaultContext } from "~/context/vault";
 
 function VaultManagementActions() {
-  const vault = useVault();
+  const vault = useVaultContext();
   const bitwarden = useBitwarden();
 
   const handleLockVault = async () => {
     const toast = await showToast(Toast.Style.Animated, "Locking Vault...", "Please wait");
-    await bitwarden.lock(VAULT_LOCK_MESSAGES.MANUAL);
+    await bitwarden.lock({ reason: VAULT_LOCK_MESSAGES.MANUAL });
     await toast.hide();
   };
 
   const handleLogoutVault = async () => {
     const toast = await showToast({ title: "Logging Out...", style: Toast.Style.Animated });
-    await bitwarden.logout();
-    await toast.hide();
+    try {
+      await bitwarden.logout();
+      await toast.hide();
+    } catch (error) {
+      toast.title = "Failed to logout";
+      toast.style = Toast.Style.Failure;
+    }
   };
 
   return (

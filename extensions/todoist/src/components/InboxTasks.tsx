@@ -6,8 +6,7 @@ import { QuickLinkView, ViewMode } from "../home";
 import useCachedData from "../hooks/useCachedData";
 import useViewTasks from "../hooks/useViewTasks";
 
-import CreateViewAction from "./CreateViewAction";
-import TaskListItem from "./TaskListItem";
+import CreateViewActions from "./CreateViewActions";
 import TaskListSections from "./TaskListSections";
 
 type InboxTasksProps = { quickLinkView: QuickLinkView };
@@ -20,7 +19,7 @@ export default function InboxTasks({ quickLinkView }: InboxTasksProps) {
     if (!data) return [];
 
     return data.items.filter((task) => task.project_id === inbox?.id);
-  }, [data]);
+  }, [data, inbox]);
 
   const { sections, viewProps, sortedTasks } = useViewTasks("todoist.inbox", {
     tasks,
@@ -42,30 +41,22 @@ export default function InboxTasks({ quickLinkView }: InboxTasksProps) {
               target={<CreateTask fromProjectId={inbox?.id} />}
             />
 
-            <CreateViewAction {...quickLinkView} />
+            {quickLinkView ? (
+              <ActionPanel.Section>
+                <CreateViewActions {...quickLinkView} />
+              </ActionPanel.Section>
+            ) : null}
           </ActionPanel>
         }
       />
     );
   }
 
-  if (viewProps.groupBy?.value === "default") {
-    return (
-      <>
-        {sortedTasks.map((task) => {
-          return (
-            <TaskListItem
-              key={task.id}
-              task={task}
-              mode={ViewMode.search}
-              viewProps={viewProps}
-              quickLinkView={quickLinkView}
-            />
-          );
-        })}
-      </>
-    );
-  }
-
-  return <TaskListSections mode={ViewMode.project} sections={sections} viewProps={viewProps} />;
+  return (
+    <TaskListSections
+      mode={ViewMode.project}
+      sections={viewProps.groupBy?.value === "default" ? [{ name: "Inbox", tasks: sortedTasks }] : sections}
+      viewProps={viewProps}
+    />
+  );
 }

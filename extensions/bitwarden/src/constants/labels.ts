@@ -1,7 +1,8 @@
+import { Keyboard } from "@raycast/api";
 import { VAULT_TIMEOUT } from "~/constants/preferences";
-import { Card, Identity } from "~/types/vault";
+import { Card, Identity, ItemType } from "~/types/vault";
 
-export const VAULT_TIMEOUT_MS_TO_LABEL = {
+export const VAULT_TIMEOUT_MS_TO_LABEL: Partial<Record<keyof typeof VAULT_TIMEOUT, string>> = {
   [VAULT_TIMEOUT.IMMEDIATELY]: "Immediately",
   [VAULT_TIMEOUT.ONE_MINUTE]: "1 Minute",
   [VAULT_TIMEOUT.FIVE_MINUTES]: "5 Minutes",
@@ -41,4 +42,18 @@ export const IDENTITY_KEY_LABEL: Record<keyof Identity, string> = {
   state: "State / Province",
   postalCode: "Zip / Postal code",
   country: "Country",
+};
+
+export const ITEM_TYPE_TO_LABEL: Record<ItemType, string> = {
+  [ItemType.LOGIN]: "Login",
+  [ItemType.CARD]: "Card",
+  [ItemType.IDENTITY]: "Identity",
+  [ItemType.NOTE]: "Secure Note",
+};
+
+export const MODIFIER_TO_LABEL: Record<Keyboard.KeyModifier, string> = {
+  cmd: "⌘",
+  shift: "⇧",
+  opt: "⌥",
+  ctrl: "⌃",
 };

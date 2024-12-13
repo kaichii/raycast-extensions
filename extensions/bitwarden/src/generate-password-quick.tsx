@@ -1,16 +1,19 @@
 import { Clipboard, getPreferenceValues, showHUD, showToast, Toast } from "@raycast/api";
 import { Bitwarden } from "~/api/bitwarden";
-import { Preferences } from "~/types/preferences";
+import { showCopySuccessMessage } from "~/utils/clipboard";
 import { captureException } from "~/utils/development";
 import { getPasswordGeneratorOptions } from "~/utils/passwords";
 import { getTransientCopyPreference } from "~/utils/preferences";
 
-const { generatePasswordQuickAction } = getPreferenceValues<Preferences>();
+const { generatePasswordQuickAction } = getPreferenceValues<Preferences.GeneratePasswordQuick>();
 
-const actions: Record<Preferences["generatePasswordQuickAction"], (password: string) => Promise<void>> = {
+const actions: Record<
+  Preferences.GeneratePasswordQuick["generatePasswordQuickAction"],
+  (password: string) => Promise<void>
+> = {
   copy: async (password) => {
     await Clipboard.copy(password, { transient: getTransientCopyPreference("password") });
-    await showHUD("Copied password to clipboard");
+    await showCopySuccessMessage("Copied password to clipboard");
   },
   paste: async (password) => {
     await Clipboard.paste(password);
@@ -23,9 +26,9 @@ const actions: Record<Preferences["generatePasswordQuickAction"], (password: str
 };
 
 async function generatePasswordQuickCommand() {
-  const toast = await showToast(Toast.Style.Animated, "Generating password…");
+  const toast = await showToast(Toast.Style.Animated, "Generating password...");
   try {
-    const bitwarden = await new Bitwarden().initialize();
+    const bitwarden = await new Bitwarden(toast).initialize();
     const options = await getPasswordGeneratorOptions();
     const password = await bitwarden.generatePassword(options);
     await actions[generatePasswordQuickAction](password);

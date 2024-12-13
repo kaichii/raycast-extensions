@@ -1,5 +1,3 @@
-import { PasswordHistory } from "~/types/passwords";
-
 export interface Item {
   object: "item";
   id: string;
@@ -35,13 +33,15 @@ export interface Folder {
   name: string;
 }
 
-export enum IdentityTitle {
-  MR = "Mr",
-  MRS = "Mrs",
-  MS = "Ms",
-  MX = "Mx",
-  DR = "Dr",
-}
+export const IDENTITY_TITLES = {
+  MR: "Mr",
+  MRS: "Mrs",
+  MS: "Ms",
+  MX: "Mx",
+  DR: "Dr",
+} as const;
+
+export type IdentityTitle = (typeof IDENTITY_TITLES)[keyof typeof IDENTITY_TITLES];
 
 export interface Identity {
   title: IdentityTitle | null;
@@ -64,18 +64,20 @@ export interface Identity {
   licenseNumber: string | null;
 }
 
-export enum CardBrand {
-  VISA = "Visa",
-  MASTERCARD = "Mastercard",
-  AMEX = "Amex",
-  DISCOVER = "Discover",
-  DINERS_CLUB = "Diners Club",
-  JCB = "JCB",
-  MAESTRO = "Maestro",
-  UNIONPAY = "UnionPay",
-  RUPAY = "RuPay",
-  OTHER = "Other",
-}
+export const CARD_BRANDS = {
+  VISA: "Visa",
+  MASTERCARD: "Mastercard",
+  AMEX: "Amex",
+  DISCOVER: "Discover",
+  DINERS_CLUB: "Diners Club",
+  JCB: "JCB",
+  MAESTRO: "Maestro",
+  UNION_PAY: "UnionPay",
+  RU_PAY: "RuPay",
+  OTHER: "Other",
+} as const;
+
+export type CardBrand = (typeof CARD_BRANDS)[keyof typeof CARD_BRANDS];
 
 export interface Card {
   cardholderName: string | null;
@@ -120,6 +122,11 @@ export enum UriMatch {
 export interface Uris {
   match: UriMatch | null;
   uri: string | null;
+}
+
+export interface PasswordHistory {
+  lastUsedDate: string;
+  password: string;
 }
 
 export interface SecureNote {
